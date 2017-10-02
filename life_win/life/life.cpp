@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <exception>
+#include <chrono>
 #include <Windows.h>
 
 void iferr(BOOL val)
@@ -38,13 +39,15 @@ public:
 		iferr(GetConsoleScreenBufferInfo(hStdOut, &csbi));
 		width = csbi.srWindow.Right - csbi.srWindow.Left + 1;
 		heigth = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
+		coord.X = csbi.srWindow.Left;
+		coord.Y = csbi.srWindow.Top;
 
 		iferr(SetConsoleMode(hStdIn, ENABLE_MOUSE_INPUT | ENABLE_WINDOW_INPUT));
 		CONSOLE_CURSOR_INFO newCursor;
 		newCursor.bVisible = false;
 		newCursor.dwSize = 10;
 		iferr(SetConsoleCursorInfo(hStdOut, &newCursor));
-		b1 = std::vector<wchar_t>(width*heigth, ' ');
+		b1 = std::vector<TCHAR>(width*heigth, ' ');
 
 		for (int r = 0; r < heigth; ++r)
 		{
@@ -61,6 +64,7 @@ public:
 		running = true;
 		DWORD numRead;
 		INPUT_RECORD buff[128];
+		last = std::chrono::high_resolution_clock::now();
 		while(running)
 		{
 			iferr(GetNumberOfConsoleInputEvents(hStdIn, &numRead));
@@ -95,9 +99,14 @@ public:
 			}
 			b2.swap(b1);
 			DWORD ret;
-			COORD coord = { 0, 0 };
 			WriteConsoleOutputCharacter(hStdOut, &b1[0], heigth * width, coord, &ret);
-			Sleep(1000/60);
+			auto curr = std::chrono::high_resolution_clock::now();
+			auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(curr - last).count();
+			last = curr;
+			std::basic_string<TCHAR> str = "delta: " + std::to_string(diff);
+			WriteConsoleOutputCharacter(hStdOut, &str[0], str.size(), coord, &ret);
+
+			Sleep(1000.0/60);
 		}
 	}
 
@@ -123,7 +132,9 @@ private:
 	CONSOLE_CURSOR_INFO oldCursor;
 	short width, heigth;
 	bool running;
-	std::vector<wchar_t> b1, b2;
+	std::vector<TCHAR> b1, b2;
+	COORD coord;
+	std::chrono::time_point<std::chrono::high_resolution_clock> last;
 };
 
 int main()
