@@ -83,7 +83,7 @@ public:
 					{
 						for (int dc = c - 1; dc < c + 2; ++dc)
 						{
-							if (!(dr == r && dc == c) && dr > 0 && dr < heigth && dc > 0 && dc < width)
+							if (!(dr == r && dc == c) && dr >= 0 && dr < heigth && dc >= 0 && dc < width)
 							{
 								if (b1[dr * width + dc] == 'O') ++alive;
 							}
